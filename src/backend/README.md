@@ -51,7 +51,25 @@ After running the server, you can access the API documentation.
 
 ### Testing
 
-The test suite has not been implemented yet. This section will be updated once testing is set up.
+The project uses Jest for unit testing. To run the tests:
+
+```
+pnpm test
+```
+
+To run tests in watch mode during development:
+
+```
+pnpm test:watch
+```
+
+The test suite covers:
+- Database utilities and connections
+- tRPC router endpoints
+- Service functions
+- Server utilities
+
+To add new tests, create files with the `.test.ts` extension in the appropriate directory under `src/__tests__/`.
 
 ### Docker
 
