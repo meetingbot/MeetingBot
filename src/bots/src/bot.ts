@@ -1,3 +1,4 @@
+import { reportEvent } from "./monitoring";
 import { type BotConfig, type EventCode } from "./types";
 
 export interface BotInterface {
@@ -72,5 +73,39 @@ export class Bot implements BotInterface {
    */
   getContentType(): string {
     throw new Error("Method not implemented.");
+  }
+}
+
+export const createBot = async (botData: BotConfig): Promise<Bot> => {
+  
+  const botId = botData.id;
+
+  // Change
+  switch (botData.meetingInfo.platform) {
+
+    // Google
+    case "google":
+      const { MeetsBot } = await import("../meet/src/bot");
+      return new MeetsBot(botData, async (eventType: EventCode, data: any) => {
+        await reportEvent(botId, eventType, data);
+      });
+
+    // Teams
+    case "teams":
+      const { TeamsBot } = await import("../teams/src/bot");
+      return new TeamsBot(botData, async (eventType: EventCode, data: any) => {
+        await reportEvent(botId, eventType, data);
+      });
+
+    // Zoom
+    case "zoom":
+      const { ZoomBot } = await import("../zoom/src/bot");
+      return new ZoomBot(botData, async (eventType: EventCode, data: any) => {
+        await reportEvent(botId, eventType, data);
+      });
+    
+    // Edge Case
+    default:
+      throw new Error(`Unsupported platform: ${botData.meetingInfo.platform}`);
   }
 }

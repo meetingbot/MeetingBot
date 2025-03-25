@@ -41,15 +41,20 @@ export class TeamsBot extends Bot {
 
   async screenshot(fName: string = "screenshot.png") {
     if (!this.page) throw new Error("Page not initialized");
-    const screenshot = await this.page.screenshot({
-      type: "png",
-      encoding: "binary",
-    });
 
-    // Save the screenshot to a file
-    const screenshotPath = `./${fName}`;
-    fs.writeFileSync(screenshotPath, screenshot);
-    console.log(`Screenshot saved to ${screenshotPath}`);
+    try {
+      const screenshot = await this.page.screenshot({
+        type: "png",
+        encoding: "binary",
+      });
+
+      // Save the screenshot to a file
+      const screenshotPath = `./${fName}`;
+      fs.writeFileSync(screenshotPath, screenshot);
+      console.log(`Screenshot saved to ${screenshotPath}`);
+    } catch (error) {
+      console.log("Error taking screenshot:", error);
+    }
   }
 
   async joinMeeting() {
@@ -64,6 +69,7 @@ export class TeamsBot extends Bot {
     }) as unknown as Browser;
 
     // Parse the URL
+    console.log("Parsing URL:", this.url);
     const urlObj = new URL(this.url);
 
     // Override camera and microphone permissions
@@ -74,21 +80,24 @@ export class TeamsBot extends Bot {
     // Open a new page
     const page = await this.browser.newPage();
     this.page = page;
+    console.log('Opened Page');
 
     // Navigate the page to a URL
     await page.goto(urlObj.href);
-
 
     // Fill in the display name
     await page
       .locator(`[data-tid="prejoin-display-name-input"]`)
       .fill(this.settings.botDisplayName ?? "Meeting Bot");
-
+    console.log('Entered Display Name');
+    
     // Mute microphone before joining
     await page.locator(`[data-tid="toggle-mute"]`).click();
-
+    console.log('Muted');
+    
     // Join the meeting
     await page.locator(`[data-tid="prejoin-join-button"]`).click();
+    console.log('Found the Join Button');
 
     // Wait until join button is disabled or disappears
     await page.waitForFunction(
@@ -122,6 +131,7 @@ export class TeamsBot extends Bot {
     }
 
     // wait for the leave button to appear (meaning we've joined the meeting)
+    console.log('Waiting for the ability to leave the meeting (when I\'m in the meeting...)', timeout, 'ms')
     try {
       await page.waitForSelector(leaveButtonSelector, {
         timeout: timeout,
@@ -238,6 +248,11 @@ export class TeamsBot extends Bot {
 
       // Close the websocket server
       (await wss).close();
+    }
+
+     // Clear any intervals or timeouts to prevent open handles
+     if (this.participantsIntervalId) {
+        clearInterval(this.participantsIntervalId);
     }
   }
 }
