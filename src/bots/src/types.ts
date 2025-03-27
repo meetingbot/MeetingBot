@@ -53,3 +53,10 @@ export enum EventCode {
   PARTICIPANT_LEAVE = "PARTICIPANT_LEAVE",
   LOG = "LOG",
 }
+
+export class WaitingRoomTimeoutError extends Error {
+  constructor(message: string = "The ") {
+    super(message);
+    this.name = "WaitingRoomTimeoutError";
+  }
+}
