@@ -3,7 +3,7 @@ provider "aws" {
   profile = var.aws_profile
   default_tags {
     tags = {
-      app-id      = "meetingbot"
+      app-id      = var.app_name
       app-purpose = "Self-hosted meeting bot API"
       environment = terraform.workspace
       pii         = "yes"
@@ -14,7 +14,7 @@ provider "aws" {
 data "aws_availability_zones" "available" {}
 
 locals {
-  name = "meetingbot-${terraform.workspace}"
+  name = "${var.app_name}-${terraform.workspace}"
 
   azs = slice(data.aws_availability_zones.available.names, 0, 3)
 

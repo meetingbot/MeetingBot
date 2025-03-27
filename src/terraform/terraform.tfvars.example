@@ -1,3 +1,12 @@
 aws_profile = "meetingbot"
 aws_region  = "us-east-2"
 domain_name = "app.meetingbot.tech"
+app_name = "meetingbot"
+auth_github_id = ""
+auth_github_secret = ""
+frontend_image_url = ""
+backend_image_url = ""
+meet_bot_image_url = ""
+zoom_bot_image_url = ""
+teams_bot_image_url = ""
+

@@ -1,4 +1,4 @@
 .terraform
 .infracost
 
-backend.tfvars
+*.tfvars
