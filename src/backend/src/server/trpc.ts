@@ -10,7 +10,7 @@ import { db } from '../db'
 import { CreateExpressContextOptions } from '@trpc/server/adapters/express'
 import { TRPCError } from '@trpc/server'
 import { apiKeys, apiRequestLogs } from '../db/schema'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, or, gt, lte, isNull } from 'drizzle-orm'
 import { getSession, Session } from '@auth/express'
 import { authConfig } from './auth'
 
@@ -113,13 +113,40 @@ const authMiddleware = t.middleware(async ({ ctx, next, path, type }) => {
     let apiKeyRecord = null
 
     try {
-      // Check if the API key exists and is not revoked
+      // Check if the API key exists and is not revoked and not expired
       const apiKeyResult = await ctx.db
         .select()
         .from(apiKeys)
-        .where(and(eq(apiKeys.key, apiKey), eq(apiKeys.isRevoked, false)))
+        .where(
+          and(
+            eq(apiKeys.key, apiKey),
+            eq(apiKeys.isRevoked, false),
+            // Add check for not expired (either expiresAt is null or it's in the future)
+            or(isNull(apiKeys.expiresAt), gt(apiKeys.expiresAt, new Date()))
+          )
+        )
 
       if (!apiKeyResult[0]) {
+        // Check if the key exists but is expired
+        const expiredKeyResult = await ctx.db
+          .select()
+          .from(apiKeys)
+          .where(
+            and(
+              eq(apiKeys.key, apiKey),
+              eq(apiKeys.isRevoked, false),
+              // Check if it exists but is expired
+              lte(apiKeys.expiresAt, new Date())
+            )
+          )
+
+        if (expiredKeyResult[0]) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'API key has expired',
+          })
+        }
+
         throw new TRPCError({
           code: 'UNAUTHORIZED',
           message: 'Invalid API key',
