@@ -5,10 +5,10 @@ import crypto from "crypto";
 import { BotConfig, EventCode, WaitingRoomTimeoutError } from "../../src/types";
 import { Bot } from "../../src/bot";
 import path from "path";
+import { Transform } from "stream";
 
 const leaveButtonSelector =
   'button[aria-label="Leave (Ctrl+Shift+H)"], button[aria-label="Leave (⌘+Shift+H)"]';
-
 
 export class TeamsBot extends Bot {
   recordingPath: string;
@@ -19,6 +19,7 @@ export class TeamsBot extends Bot {
   browser!: Browser;
   page!: Page;
   file!: fs.WriteStream;
+  stream!: Transform;
 
   constructor(
     botSettings: BotConfig,
@@ -58,7 +59,8 @@ export class TeamsBot extends Bot {
     }
   }
 
-  async joinMeeting() {
+
+  async launchBrowser() {
 
     // Launch the browser and open a new blank page
     this.browser = await launch({
@@ -82,8 +84,17 @@ export class TeamsBot extends Bot {
     const page = await this.browser.newPage();
     this.page = page;
     console.log('Opened Page');
+  }
+
+
+  async joinMeeting() {
+
+    await this.launchBrowser();
 
     // Navigate the page to a URL
+    const page = this.page;
+    const urlObj = new URL(this.url);
+    console.log("Navigating to URL:", urlObj.href);
     await page.goto(urlObj.href);
 
     // Fill in the display name
@@ -91,11 +102,11 @@ export class TeamsBot extends Bot {
       .locator(`[data-tid="prejoin-display-name-input"]`)
       .fill(this.settings.botDisplayName ?? "Meeting Bot");
     console.log('Entered Display Name');
-    
+
     // Mute microphone before joining
     await page.locator(`[data-tid="toggle-mute"]`).click();
     console.log('Muted');
-    
+
     // Join the meeting
     await page.locator(`[data-tid="prejoin-join-button"]`).click();
     console.log('Found the Join Button');
@@ -152,6 +163,34 @@ export class TeamsBot extends Bot {
     // TOOD: Implement this
     return false;
   }
+
+  async startRecording() {
+
+    if (!this.page) throw new Error("Page not initialized");
+
+    // Get the stream
+    this.stream = await getStream(
+      this.page as any, //puppeteer type issue
+      { audio: true, video: true },
+    );
+
+
+    // Create a file
+    this.file = fs.createWriteStream(this.getRecordingPath());
+    this.stream.pipe(this.file);
+
+    // Pipe the stream to a file
+    console.log("Recording...");
+  }
+
+  async stopRecording() {
+    // Stop recording
+    if (this.stream) {
+      console.log("Stopping recording...");
+      this.stream.destroy();
+    }
+  }
+
 
 
   async run() {
@@ -213,15 +252,7 @@ export class TeamsBot extends Bot {
       this.settings.heartbeatInterval
     );
 
-    // Get the stream
-    const stream = await getStream(
-      this.page as any, //puppeteer type issue
-      { audio: true, video: true },
-    );
-
-    // Pipe the stream to a file
-    console.log("Recording...");
-    stream.pipe(this.file);
+    await this.startRecording();
 
     // Then wait for meeting to end by watching for the "Leave" button to disappear
     await this.page.waitForFunction(
@@ -234,8 +265,6 @@ export class TeamsBot extends Bot {
     // Clear the participants checking interval
     clearInterval(this.participantsIntervalId);
 
-    // Stop recording
-    await stream.destroy();
     this.endLife();
   }
 
@@ -259,9 +288,12 @@ export class TeamsBot extends Bot {
       (await wss).close();
     }
 
-     // Clear any intervals or timeouts to prevent open handles
-     if (this.participantsIntervalId) {
-        clearInterval(this.participantsIntervalId);
+    // Clear any intervals or timeouts to prevent open handles
+    if (this.participantsIntervalId) {
+      clearInterval(this.participantsIntervalId);
     }
+
+    // Delete recording
+    this.stopRecording();
   }
 }

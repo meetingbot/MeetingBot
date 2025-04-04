@@ -56,12 +56,10 @@ export class ZoomBot extends Bot {
     return false;
   }
 
-
-  /**
-   * Opens a browser and navigatges, joins the meeting.
-   * @returns {Promise<void>}
+  /** Launch browser
+   * 
    */
-  async joinMeeting() {
+  async launchBrowser() {
 
     // Launch a browser and open the meeting
     this.browser = await launch({
@@ -89,11 +87,26 @@ export class ZoomBot extends Bot {
     context.overridePermissions(urlObj.origin, ["camera", "microphone"]);
     console.log('Turned off camera & mic permissions')
 
-    // Opens a new page
-    const page = await this.browser.newPage();
-    this.page = page;
+    // Opens a new page in the browser
+    this.page = await this.browser.newPage();
+  }
+
+
+  /**
+   * Opens a browser and navigatges, joins the meeting.
+   * @returns {Promise<void>}
+   */
+  async joinMeeting() {
+
+    // Launch
+    await this.launchBrowser();
+
+    // Create a URL object from the url
+    const page = this.page;
+    const urlObj = new URL(this.url);
     
     // Navigates to the url
+    console.log("Atempting to open link");
     await page.goto(urlObj.href);
     console.log("Page opened");
 

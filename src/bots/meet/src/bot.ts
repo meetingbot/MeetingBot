@@ -184,16 +184,8 @@ export class MeetsBot extends Bot {
     return "video/mp4";
   }
 
-  /**
-   * 
-   * Open browser and navigate to the meeting URL, then join a meeting (await entry)
-   * Verfied for UI as of March 2025.
-   * 
-   * @returns {Promise<number>} - Returns 0 if the bot successfully joins the meeting, or 1 if it fails to join the meeting.
-   */
-
-  // Launch the browser and open a new blank page
-  async joinMeeting() {
+  /** launch the browser */
+  async launchBrowser() {
 
     // Launch Browser
     this.browser = await chromium.launch({
@@ -213,6 +205,16 @@ export class MeetsBot extends Bot {
 
     // Create Page, Go to
     this.page = await context.newPage();
+  }
+
+
+  // Launch the browser and open a new blank page
+  async joinMeeting() {
+
+    // Launch
+    await this.launchBrowser();
+
+    //
     await this.page.waitForTimeout(randomDelay(1000));
 
     // Listen for console events, reprint them in the terminal -- debug only
@@ -264,7 +266,7 @@ export class MeetsBot extends Bot {
     await this.page.bringToFront(); //ensure active
 
     console.log("Waiting for the input field to be visible...");
-    await this.page.waitForSelector(enterNameField,{timeout: 15000}); // If it can't find the enter name field in 15 seconds then something went wrong.
+    await this.page.waitForSelector(enterNameField, { timeout: 15000 }); // If it can't find the enter name field in 15 seconds then something went wrong.
 
     console.log("Found it. Waiting for 1 second...");
     await this.page.waitForTimeout(randomDelay(1000));
@@ -317,19 +319,26 @@ export class MeetsBot extends Bot {
   }
 
   /**
-   * Starts the recording of the call using ffmpeg.
    * 
-   * This function initializes an ffmpeg process to capture the screen and audio of the meeting.
-   * It ensures that only one recording process is active at a time and logs the status of the recording.
-   * 
-   * @returns {void}
    */
-  async startRecording() {
+  getFFmpegParams() {
+   
+    // For Testing (pnpm test)
+    if (!fs.existsSync('/tmp/.X11-unix/X0')) {
+      return [
+        '-y',
+        '-f', 'lavfi',
+        '-i', 'color=c=blue:s=1280x720:r=30',
+        '-video_size', '1280x720',
+        '-preset', 'ultrafast',
+        '-c:a', 'aac',
+        '-c:v', 'libx264',
+        this.getRecordingPath()
+      ]
+    }
 
-    console.log('Attempting to start the recording ...');
-    if (this.ffmpegProcess) return console.log('Recording already started.');
-
-    this.ffmpegProcess = spawn('ffmpeg', [
+    // Dockerized Environment
+    return [
       '-y',
       '-f', 'x11grab',
       '-video_size', '1280x720',
@@ -340,8 +349,24 @@ export class MeetsBot extends Bot {
       '-preset', 'ultrafast',
       '-c:a', 'aac',
       this.getRecordingPath()
-    ]);
-    
+    ];
+  }
+
+  /**
+   * Starts the recording of the call using ffmpeg.
+   * 
+   * This function initializes an ffmpeg process to capture the screen and audio of the meeting.
+   * It ensures that only one recording process is active at a time and logs the status of the recording.
+   * 
+   * @returns {void}
+   */
+  async startRecording() {
+
+    console.log('Attempting to start the recording ... @', this.getRecordingPath());
+    if (this.ffmpegProcess) return console.log('Recording already started.');
+
+    this.ffmpegProcess = spawn('ffmpeg', this.getFFmpegParams());
+
     console.log('Spawned a subprocess to record: pid=', this.ffmpegProcess.pid);
 
     // Report any data / errors (DEBUG, since it also prints that data is available).
@@ -405,28 +430,28 @@ export class MeetsBot extends Bot {
    * 
    */
   async checkKicked() {
-      
-      // Check if "Return to Home Page" button exists (Kick Condition 1)
-      if (await this.page.locator(gotKickedDetector).count().catch(() => 0) > 0) {
-        return true;
-      }
 
-      // console.log('Checking for hidden leave button ...')
-      // Hidden Leave Button (Kick Condition 2)
-      if (await this.page.locator(leaveButton).isHidden({ timeout: 500 }).catch(() => true)) {
-        return true;
-      }
+    // Check if "Return to Home Page" button exists (Kick Condition 1)
+    if (await this.page.locator(gotKickedDetector).count().catch(() => 0) > 0) {
+      return true;
+    }
 
-      // console.log('Checking for removed from meeting text ...')
-      // Removed from Meeting Text (Kick Condition 3)
-      if (await this.page.locator('text="You\'ve been removed from the meeting"').isVisible({ timeout: 500 }).catch(() => false)) {
-        return true;
-      }
+    // console.log('Checking for hidden leave button ...')
+    // Hidden Leave Button (Kick Condition 2)
+    if (await this.page.locator(leaveButton).isHidden({ timeout: 500 }).catch(() => true)) {
+      return true;
+    }
 
-      // Did not get kicked if reached here.
-      return false;
+    // console.log('Checking for removed from meeting text ...')
+    // Removed from Meeting Text (Kick Condition 3)
+    if (await this.page.locator('text="You\'ve been removed from the meeting"').isVisible({ timeout: 500 }).catch(() => false)) {
+      return true;
+    }
+
+    // Did not get kicked if reached here.
+    return false;
   }
-  
+
 
   /**
    * 
