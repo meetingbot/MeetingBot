@@ -5,9 +5,7 @@ import { useSession } from "next-auth/react";
 import { api } from "~/trpc/react";
 
 // Mock the auth and API modules
-jest.mock("next-auth/react", () => ({
-  useSession: jest.fn(),
-}));
+jest.mock("next-auth/react");
 
 jest.mock("~/trpc/react", () => ({
   api: {
