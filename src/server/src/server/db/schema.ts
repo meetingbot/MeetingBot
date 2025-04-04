@@ -351,6 +351,8 @@ export const selectEventSchema = createSelectSchema(events).extend({
   eventType: eventCode,
 });
 
+export type SelectEventType = z.infer<typeof selectEventSchema>;
+
 export const dailyUsageSchema = z.object({
   date: z.string(),
   msEllapsed: z.number(),
