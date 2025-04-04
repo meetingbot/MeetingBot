@@ -4,6 +4,7 @@ import { launch, getStream, wss } from "puppeteer-stream";
 import crypto from "crypto";
 import { BotConfig, EventCode, WaitingRoomTimeoutError } from "../../src/types";
 import { Bot } from "../../src/bot";
+import path from "path";
 
 const leaveButtonSelector =
   'button[aria-label="Leave (Ctrl+Shift+H)"], button[aria-label="Leave (⌘+Shift+H)"]';
@@ -49,7 +50,7 @@ export class TeamsBot extends Bot {
       });
 
       // Save the screenshot to a file
-      const screenshotPath = `./${fName}`;
+      const screenshotPath = path.resolve(`/tmp/${fName}`);
       fs.writeFileSync(screenshotPath, screenshot);
       console.log(`Screenshot saved to ${screenshotPath}`);
     } catch (error) {
