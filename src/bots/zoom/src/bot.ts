@@ -44,6 +44,12 @@ export class ZoomBot extends Bot {
     console.log(`Screenshot saved to ${screenshotPath}`);
   }
 
+  async checkKicked(): Promise<boolean> {
+
+    //TODO: Implement this
+    return false;
+  }
+
 
   /**
    * Opens a browser and navigatges, joins the meeting.

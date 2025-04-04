@@ -8,6 +8,11 @@ export interface BotInterface {
   getContentType(): string;
   run(): Promise<void>;
   screenshot(fName?: string): Promise<void>;
+
+  //
+  joinMeeting(): Promise<any>;
+  endLife(): Promise<any>;
+  checkKicked(): Promise<boolean>;
 }
 
 export class Bot implements BotInterface {
@@ -72,6 +77,14 @@ export class Bot implements BotInterface {
    * @returns {string} contentType
    */
   getContentType(): string {
+    throw new Error("Method not implemented.");
+  }
+
+  /**
+   * Check if the bot has been kicked from the meeting.
+   * @returns {Promise<boolean>} - True if the bot has been kicked, false otherwise.
+   */
+  async checkKicked(): Promise<boolean> {
     throw new Error("Method not implemented.");
   }
 }

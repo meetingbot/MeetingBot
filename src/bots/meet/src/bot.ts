@@ -401,6 +401,34 @@ export class MeetsBot extends Bot {
   }
 
   /**
+   * Check if we got kicked from the meeting.
+   * 
+   */
+  async checkKicked() {
+      
+      // Check if "Return to Home Page" button exists (Kick Condition 1)
+      if (await this.page.locator(gotKickedDetector).count().catch(() => 0) > 0) {
+        return true;
+      }
+
+      // console.log('Checking for hidden leave button ...')
+      // Hidden Leave Button (Kick Condition 2)
+      if (await this.page.locator(leaveButton).isHidden({ timeout: 500 }).catch(() => true)) {
+        return true;
+      }
+
+      // console.log('Checking for removed from meeting text ...')
+      // Removed from Meeting Text (Kick Condition 3)
+      if (await this.page.locator('text="You\'ve been removed from the meeting"').isVisible({ timeout: 500 }).catch(() => false)) {
+        return true;
+      }
+
+      // Did not get kicked if reached here.
+      return false;
+  }
+  
+
+  /**
    * 
    * Meeting actions of the bot.
    * 
@@ -529,7 +557,7 @@ export class MeetsBot extends Bot {
       console.log('Checking if 1 Person Remaining ...', this.participantCount);
       if (this.participantCount === 1) {
 
-        const leaveMs = this.settings.automaticLeave.everyoneLeftTimeout;
+        const leaveMs = this.settings?.automaticLeave?.everyoneLeftTimeout ?? 30000; // Default to 30 seconds if not set
         const msDiff = Date.now() - this.timeAloneStarted;
         console.log(`Only me left in the meeting. Waiting for timeout time to have allocated (${msDiff / 1000} / ${leaveMs / 1000}s) ...`);
 
@@ -540,29 +568,13 @@ export class MeetsBot extends Bot {
       }
 
       // Got kicked -- no longer in the meeting
-      // Check each of these conditions
+      // Check each of the potentials conditions
+      if (await this.checkKicked()) {
 
-      // Check if "Return to Home Page" button exists (Kick Condition 1)
-      if (await this.page.locator(gotKickedDetector).count().catch(() => 0) > 0) {
-        this.kicked = true;
-        console.log('Kicked');
-        break;
-      }
+        console.log('Detected that we were kicked from the meeting.');
+        this.kicked = true; //store
+        break; //exit loop
 
-      // console.log('Checking for hidden leave button ...')
-      // Hidden Leave Button (Kick Condition 2)
-      if (await this.page.locator(leaveButton).isHidden({ timeout: 500 }).catch(() => true)) {
-        this.kicked = true;
-        console.log('Kicked');
-        break;
-      }
-
-      // console.log('Checking for removed from meeting text ...')
-      // Removed from Meeting Text (Kick Condition 3)
-      if (await this.page.locator('text="You\'ve been removed from the meeting"').isVisible({ timeout: 500 }).catch(() => false)) {
-        this.kicked = true;
-        console.log('Kicked');
-        break;
       }
 
       // Reset Loop

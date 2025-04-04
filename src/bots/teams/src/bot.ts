@@ -145,6 +145,14 @@ export class TeamsBot extends Bot {
     console.log("Successfully joined meeting");
   }
 
+
+  // Ensure we're not kicked from the meeting
+  async checkKicked() {
+    // TOOD: Implement this
+    return false;
+  }
+
+
   async run() {
 
     // Start Join
