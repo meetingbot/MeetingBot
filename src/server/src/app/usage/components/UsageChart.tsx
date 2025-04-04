@@ -14,6 +14,7 @@ import { Button } from "~/components/ui/button"; // Assuming you're using shadcn
 import { UsageTooltip } from "./UsageTooltip";
 import { Skeleton } from "~/components/ui/skeleton";
 import { api } from "~/trpc/react";
+import ErrorAlert from "~/components/custom/ErrorAlert";
 
 // Define a proper type for the usage data
 interface UsageData {
@@ -51,7 +52,7 @@ export function UsageChart() {
   }, []);
 
   // Load the Data
-  const { data, isLoading } =
+  const { data, isLoading, error } =
     timeframe === "week"
       ? api.usage.getWeekDailyUsage.useQuery({})
       : api.usage.getMonthDailyUsage.useQuery({});
@@ -102,12 +103,14 @@ export function UsageChart() {
           <div className="flex gap-2">
             {/* <Button variant={timeframe === 'year' ? "default" : 'outline'} onClick={() => setTimeframe('year')}>This Year</Button> */}
             <Button
+              data-testid="month-button"
               variant={timeframe === "month" ? "default" : "outline"}
               onClick={() => setTimeframe("month")}
             >
               This Month
             </Button>
             <Button
+              data-testid="week-button"
               variant={timeframe === "week" ? "default" : "outline"}
               onClick={() => setTimeframe("week")}
             >
@@ -144,41 +147,45 @@ export function UsageChart() {
       {/* Chart */}
       <div className="mt-6">
         {data && data.length > 0 ? (
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
+          <div data-testid="chart-container" className="h-full w-full">
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" />
 
-              <XAxis
-                dataKey="date"
-                tickFormatter={dateTickFormatter} // Format YYYY-MM-DD
-              />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={dateTickFormatter} // Format YYYY-MM-DD
+                />
 
-              <YAxis
-                domain={ydomain}
-                allowDecimals={false}
-                tickFormatter={
-                  metric === "msEllapsed"
-                    ? (value) => (value / 60000).toFixed(2)
-                    : undefined
-                }
-              />
+                <YAxis
+                  domain={ydomain}
+                  allowDecimals={false}
+                  tickFormatter={
+                    metric === "msEllapsed"
+                      ? (value) => (value / 60000).toFixed(2)
+                      : undefined
+                  }
+                />
 
-              <Tooltip content={<UsageTooltip metric={metric} />} />
+                <Tooltip content={<UsageTooltip metric={metric} />} />
 
-              {/* Define the Line */}
-              <Line
-                type="monotone"
-                dataKey={metric}
-                stroke="#6366f1"
-                strokeWidth={2}
-                dot={{ r: 0 }}
-                activeDot={{ r: 6 }}
-                animationDuration={500} // Speed up animation (default is 1500)
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        ) : isLoading || !data ? (
+                {/* Define the Line */}
+                <Line
+                  type="monotone"
+                  dataKey={metric}
+                  stroke="#6366f1"
+                  strokeWidth={2}
+                  dot={{ r: 0 }}
+                  activeDot={{ r: 6 }}
+                  animationDuration={500} // Speed up animation (default is 1500)
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : isLoading ? (
           <Skeleton className="mt-2 h-[300px] w-100" />
+        ) : error ? (
+          <ErrorAlert errorMessage={error.message} />
         ) : (
           <div>No Data</div>
         )}
