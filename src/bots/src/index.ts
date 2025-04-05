@@ -78,7 +78,7 @@ const main = async () => {
 
   // Start heartbeat in the background
   console.log("Starting heartbeat");
-  // startHeartbeat(botId, heartbeatController.signal);
+  startHeartbeat(botId, heartbeatController.signal);
 
   // Report READY_TO_DEPLOY event
   await reportEvent(botId, EventCode.READY_TO_DEPLOY);
@@ -86,10 +86,18 @@ const main = async () => {
   try {
     // Run the bot
     await bot.run().catch(async (error) => {
+
       console.error("Error running bot:", error);
       await reportEvent(botId, EventCode.FATAL, {
         description: (error as Error).message,
       });
+
+      // Check what's on the screen in case of an error
+      bot.screenshot();
+
+      // Is this necessary?
+      // **Ensure** the bot cleans up its resources 
+      await bot.endLife();
     });
 
     // Upload recording to S3

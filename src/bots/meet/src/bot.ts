@@ -4,7 +4,7 @@ import { saveVideo, PageVideoCapture } from "playwright-video";
 import { CaptureOptions } from "playwright-video/build/PageVideoCapture";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import { setTimeout } from "timers/promises";
-import { BotConfig, EventCode } from "../../src/types";
+import { BotConfig, EventCode, WaitingRoomTimeoutError } from "../../src/types";
 import { Bot } from "../../src/bot";
 import * as fs from 'fs';
 import path from "path";
@@ -186,8 +186,7 @@ export class MeetsBot extends Bot {
 
   /**
    * 
-   * Perform the actions to join a Google Meet meeting.
-   * 
+   * Open browser and navigate to the meeting URL, then join a meeting (await entry)
    * Verfied for UI as of March 2025.
    * 
    * @returns {Promise<number>} - Returns 0 if the bot successfully joins the meeting, or 1 if it fails to join the meeting.
@@ -306,7 +305,7 @@ export class MeetsBot extends Bot {
       });
     } catch (e) {
       // Timeout Error: Will get caught by bot/index.ts
-      throw { message: 'Bot was not admitted into the meeting.' };
+      throw new WaitingRoomTimeoutError();
     }
 
     //Done. Log.
@@ -384,6 +383,18 @@ export class MeetsBot extends Bot {
     this.ffmpegProcess = null;
 
     return 0;
+  }
+
+  async screenshot(fName: string = 'screenshot.png') {
+    if (!this.page) throw new Error("Page not initialized");
+    const screenshot = await this.page.screenshot({
+      type: "png",
+    });
+
+    // Save the screenshot to a file
+    const screenshotPath = `./${fName}`;
+    fs.writeFileSync(screenshotPath, screenshot);
+    console.log(`Screenshot saved to ${screenshotPath}`);
   }
 
   /**
@@ -563,18 +574,31 @@ export class MeetsBot extends Bot {
     return 0;
   }
 
-  /**
-   * 
-   * Stops the recording, leaves the call.
-   * 
-   * @returns {Promise<number>} - Returns 0 if the bot successfully leaves the meeting, or 1 if it fails to leave the meeting.
+  /** 
+   * Clean up the meeting
    */
-  async leaveMeeting() {
+  async endLife() {
 
     // Ensure Recording is done
     console.log('Stopping Recording ...')
     await this.stopRecording();
     console.log('Done.')
+
+    // Close my browser
+    if (this.browser) {
+      await this.browser.close();
+      console.log("Closed Browser.");
+    }
+
+  }
+
+  /**
+   * 
+   * Attempts to leave the meeting -- then cleans up.
+   * 
+   * @returns {Promise<number>} - Returns 0 if the bot successfully leaves the meeting, or 1 if it fails to leave the meeting.
+   */
+  async leaveMeeting() {
 
     // Try and Find the leave button, press. Otherwise, just delete the browser.
     try {
@@ -585,9 +609,7 @@ export class MeetsBot extends Bot {
       console.log('Attempted to Leave Call - couldn\'t (probably aleready left).')
     }
 
-    await this.browser.close();
-    console.log("Closed Browser.");
-
+    this.endLife();
     return 0;
   }
 }
