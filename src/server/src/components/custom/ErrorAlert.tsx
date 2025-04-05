@@ -7,7 +7,7 @@ interface ErrorAlertProps {
 
 export default function ErrorAlert({ errorMessage }: ErrorAlertProps) {
   return (
-    <Alert className="max-w-screen-sm">
+    <Alert data-testid="error-alert" className="max-w-screen-sm">
       <Terminal className="h-4 w-4" />
       <AlertTitle>An error occurred</AlertTitle>
       <AlertDescription>{errorMessage}</AlertDescription>
