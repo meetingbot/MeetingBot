@@ -27,11 +27,19 @@ import { api } from "~/trpc/react";
 import { DialogClose } from "~/components/ui/dialog";
 import { toast } from "sonner";
 
+const getSixMonthsFromNowAtEndOfDay = () => {
+  const sixMonthsFromNow = new Date(
+    new Date().getTime() + 6 * 30 * 24 * 60 * 60 * 1000,
+  );
+  sixMonthsFromNow.setHours(23, 59, 59, 999);
+  return sixMonthsFromNow;
+};
+
 const formSchema = z.object({
   name: z.string().min(2, {
     message: "Name must be at least 2 characters.",
   }),
-  expiresAt: z.date().default(new Date(Date.now() + 1000 * 60 * 60 * 24 * 180)), // 6 months from now
+  expiresAt: z.date().default(getSixMonthsFromNowAtEndOfDay()),
 });
 
 type CreateApiKeyFormProps = {
@@ -59,7 +67,7 @@ export function CreateApiKeyForm({ onSuccess }: CreateApiKeyFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 180), // 6 months from now
+      expiresAt: getSixMonthsFromNowAtEndOfDay(),
     },
   });
 
@@ -83,7 +91,11 @@ export function CreateApiKeyForm({ onSuccess }: CreateApiKeyFormProps) {
             <FormItem>
               <FormLabel>Name</FormLabel>
               <FormControl>
-                <Input placeholder="Production API Key" {...field} />
+                <Input
+                  data-testid="name-input"
+                  placeholder="Production API Key"
+                  {...field}
+                />
               </FormControl>
               <FormDescription>The name of the API key.</FormDescription>
               <FormMessage />
@@ -141,7 +153,11 @@ export function CreateApiKeyForm({ onSuccess }: CreateApiKeyFormProps) {
               Cancel
             </Button>
           </DialogClose>
-          <Button type="submit" disabled={createApiKey.isPending}>
+          <Button
+            type="submit"
+            data-testid="create-api-key-button"
+            disabled={createApiKey.isPending}
+          >
             {createApiKey.isPending ? "Creating..." : "Create API Key"}
           </Button>
         </div>
