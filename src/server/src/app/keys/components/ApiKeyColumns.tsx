@@ -2,18 +2,8 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
-import { MoreHorizontal, Copy } from "lucide-react";
 import dayjs from "dayjs";
-import { api } from "~/trpc/react";
-import { toast } from "sonner";
+import ActionCell from "./ActionCell";
 
 // Define the ApiKey type inline
 type ApiKey = {
@@ -56,69 +46,14 @@ export const columns = (
     id: "actions",
     cell: ({ row }) => {
       const apiKey = row.original;
-      return <ActionCell apiKey={apiKey} setSelectedKeyId={setSelectedKeyId} />;
+      return (
+        <ActionCell
+          key={apiKey.key}
+          id={apiKey.id}
+          isRevoked={apiKey.isRevoked ?? false}
+          setSelectedKeyId={setSelectedKeyId}
+        />
+      );
     },
   },
 ];
-
-// Create a proper React component for the actions cell
-function ActionCell({
-  apiKey,
-  setSelectedKeyId,
-}: {
-  apiKey: ApiKey;
-  setSelectedKeyId: (id: number) => void;
-}) {
-  const utils = api.useUtils();
-
-  const revokeKey = api.apiKeys.revokeApiKey.useMutation({
-    onSuccess: async () => {
-      await utils.apiKeys.listApiKeys.invalidate();
-      toast.success("API Key revoked");
-    },
-    onError: (error) => {
-      toast.error("Error", {
-        description: error.message,
-      });
-    },
-  });
-
-  return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0">
-            <span className="sr-only">Open menu</span>
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          <DropdownMenuItem
-            onClick={() => {
-              toast.promise(navigator.clipboard.writeText(apiKey.key), {
-                loading: "Copying key...",
-                success: "Key copied",
-                error: "Failed to copy key",
-              });
-            }}
-          >
-            <Copy className="mr-2 h-4 w-4" />
-            Copy Key
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSelectedKeyId(apiKey.id)}>
-            View Logs
-          </DropdownMenuItem>
-          {!apiKey.isRevoked && (
-            <DropdownMenuItem
-              className="text-red-600"
-              onClick={() => revokeKey.mutate({ id: apiKey.id })}
-            >
-              Revoke Key
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </>
-  );
-}
