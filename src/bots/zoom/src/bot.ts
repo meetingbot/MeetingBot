@@ -1,7 +1,7 @@
 import fs from "fs";
 import puppeteer, { Page, Frame } from "puppeteer";
 import { launch, getStream, wss } from "puppeteer-stream";
-import { BotConfig, EventCode } from "../../src/types";
+import { BotConfig, EventCode, WaitingRoomTimeoutError } from "../../src/types";
 import { Bot } from "../../src/bot";
 import path from "path";
 
@@ -63,6 +63,8 @@ export class ZoomBot extends Bot {
       ],
     }) as unknown as Browser; // It looks like theres a type issue with puppeteer.
 
+    console.log("Browser launched");
+
     // Create a URL object from the url
     const urlObj = new URL(this.url);
 
@@ -73,17 +75,21 @@ export class ZoomBot extends Bot {
     // This is to avoid the allow microphone and camera prompts
     context.clearPermissionOverrides();
     context.overridePermissions(urlObj.origin, ["camera", "microphone"]);
+    console.log('Turned off camera & mic permissions')
 
     // Opens a new page
     const page = await this.browser.newPage();
     this.page = page;
-
+    
     // Navigates to the url
     await page.goto(urlObj.href);
+    console.log("Page opened");
 
     // Waits for the page's iframe to load
+    console.log('Wating for iFrame to load')
     const iframe = await page.waitForSelector(".pwa-webclient__iframe");
     const frame = await iframe?.contentFrame();
+    console.log("Opened iFrame");
 
     if (frame) {
       // Wait for things to load (can be removed later in place of a check for a button to be clickable)
@@ -111,9 +117,18 @@ export class ZoomBot extends Bot {
       await frame.click(joinButton);
       console.log("Joined the meeting");
 
-      // Wait for the leave button to appear and be properly labeled before proceeding
+      // wait for the leave button to appear (meaning we've joined the meeting)
       await new Promise((resolve) => setTimeout(resolve, 1400)); // Needed to wait for the aria-label to be properly attached
-      await frame.waitForSelector(leaveButton);
+      try {
+        await frame.waitForSelector(leaveButton, {
+          timeout: this.settings.automaticLeave.waitingRoomTimeout,
+        });
+      } catch (error) {
+        // Distinct error from regular timeout
+        throw new WaitingRoomTimeoutError();
+      }
+
+      // Wait for the leave button to appear and be properly labeled before proceeding
       console.log("Leave button found and labeled, ready to start recording");
     }
   }

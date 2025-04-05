@@ -8,6 +8,7 @@
     "resolveJsonModule": true,
     "moduleDetection": "force",
     "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
 
     /* Strictness */
     "strict": true,
@@ -17,7 +18,7 @@
     /* Bundled projects */
     "lib": ["dom", "dom.iterable", "ES2022"],
     "noEmit": true,
-    "module": "CommonJS",
+    "module": "ESNext",
     "moduleResolution": "node",
     "jsx": "preserve",
 
@@ -25,7 +26,10 @@
     "baseUrl": ".",
     "paths": {
       "@bots/*": ["./*"]
-    }
+    },
+
+    /* Tests */
+    "types": ["jest"],
   },
   "include": ["src/**/*", "meet/src/**/*", "teams/src/**/*", "zoom/src/**/*"],
   "exclude": ["node_modules", "../../backend/**/*"]

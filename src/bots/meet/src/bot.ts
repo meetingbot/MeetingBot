@@ -215,9 +215,9 @@ export class MeetsBot extends Bot {
     this.page = await context.newPage();
     await this.page.waitForTimeout(randomDelay(1000));
 
-    // Listen for console events, reprint them in the terminal
+    // Listen for console events, reprint them in the terminal -- debug only
     this.page.on('console', msg => {
-      console.log(`\t :: Browser Console (${msg.type()}): ${msg.text()}`);
+      // console.log(`\t :: Browser Console (${msg.type()}): ${msg.text()}`);
     });
 
     // Inject anti-detection code using addInitScript
@@ -264,9 +264,9 @@ export class MeetsBot extends Bot {
     await this.page.bringToFront(); //ensure active
 
     console.log("Waiting for the input field to be visible...");
-    await this.page.waitForSelector(enterNameField);
+    await this.page.waitForSelector(enterNameField,{timeout: 15000}); // If it can't find the enter name field in 15 seconds then something went wrong.
 
-    console.log("Waiting for 1 seconds...");
+    console.log("Found it. Waiting for 1 second...");
     await this.page.waitForTimeout(randomDelay(1000));
 
     console.log("Filling the input field with the name...");
@@ -341,6 +341,7 @@ export class MeetsBot extends Bot {
       '-c:a', 'aac',
       this.getRecordingPath()
     ]);
+    
     console.log('Spawned a subprocess to record: pid=', this.ffmpegProcess.pid);
 
     // Report any data / errors (DEBUG, since it also prints that data is available).
@@ -349,7 +350,7 @@ export class MeetsBot extends Bot {
 
       // Just a simple quick log.
       if (!this.startedRecording) {
-        console.log('Recording Started. Data was pushed.');
+        console.log('Recording Started.');
         this.startedRecording = true;
       }
     });
@@ -360,7 +361,7 @@ export class MeetsBot extends Bot {
       this.ffmpegProcess = null;
     });
 
-    console.log('Started Recording.')
+    console.log('Started FFMPEG Process.')
   }
 
   /**
@@ -377,8 +378,10 @@ export class MeetsBot extends Bot {
     console.log('Attempting to stop the recording ...');
 
     if (!this.ffmpegProcess) {
-      throw new Error('No recording in progress');
+      console.log('No recording in progress, cannot end recording.');
+      return 1;
     }
+
     this.ffmpegProcess.kill('SIGINT'); // Graceful stop
     this.ffmpegProcess = null;
 

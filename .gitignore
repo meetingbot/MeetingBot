@@ -13,3 +13,4 @@ config.json
 envBotData.ts
 
 **/.next/
+/src/bots/screenshot.png
