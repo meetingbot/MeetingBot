@@ -1,6 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
-import { createTrpcApiMock, mockUseQuery } from "~/lib/testUtils";
+import {
+  createTrpcApiMock,
+  mockUseQuery,
+  mockUseSession,
+} from "~/lib/testUtils";
 
 jest.mock("next-auth/react");
 jest.mock("~/trpc/react", () => createTrpcApiMock());
@@ -57,16 +61,9 @@ describe("Home", () => {
   it("If the user has not yet created an API key, they will see the Welcome Dashboard", () => {
     // ARRANGE
     // user is authenticated
-    jest.mocked(useSession).mockReturnValue({
-      data: {
-        user: {
-          id: "fake_user_id",
-        },
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      },
-      status: "authenticated",
-      update: async () => null,
-    });
+    jest
+      .mocked(useSession)
+      .mockReturnValue(mockUseSession({ status: "authenticated" }));
 
     // key count is 0
     jest.mocked(api.apiKeys.getApiKeyCount.useQuery).mockReturnValue(
@@ -86,16 +83,9 @@ describe("Home", () => {
   it("If the user has created an API key, they will see the Dashboard", () => {
     // ARRANGE
     // user is authenticated
-    jest.mocked(useSession).mockReturnValue({
-      data: {
-        user: {
-          id: "fake_user_id",
-        },
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      },
-      status: "authenticated",
-      update: async () => null,
-    });
+    jest
+      .mocked(useSession)
+      .mockReturnValue(mockUseSession({ status: "authenticated" }));
 
     // key count is 1
     jest.mocked(api.apiKeys.getApiKeyCount.useQuery).mockReturnValue(
@@ -147,16 +137,9 @@ describe("Home", () => {
   it("If trpc query threw an error, the page will show an error alert", () => {
     // ARRANGE
     // user is authenticated
-    jest.mocked(useSession).mockReturnValue({
-      data: {
-        user: {
-          id: "fake_user_id",
-        },
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      },
-      status: "authenticated",
-      update: async () => null,
-    });
+    jest
+      .mocked(useSession)
+      .mockReturnValue(mockUseSession({ status: "authenticated" }));
 
     // key count is an error
     jest.mocked(api.apiKeys.getApiKeyCount.useQuery).mockReturnValue(
