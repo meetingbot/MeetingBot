@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "~/components/ui/dialog";
 import { DataTable } from "~/components/custom/DataTable";
 import { type ColumnDef } from "@tanstack/react-table";
@@ -68,7 +69,7 @@ export function BotDetailsDialog({ botId, onClose }: BotDetailsDialogProps) {
         <DialogHeader>
           <DialogTitle>Bot Details</DialogTitle>
         </DialogHeader>
-
+        <DialogDescription></DialogDescription>
         <div className="space-y-6">
           {botError ? (
             <ErrorAlert errorMessage={botError.message} />
@@ -107,7 +108,9 @@ export function BotDetailsDialog({ botId, onClose }: BotDetailsDialogProps) {
                   ) : (
                     <p>
                       <span className="font-medium">Start:</span>{" "}
-                      {bot?.startTime ? format(new Date(bot.startTime), "PPp") : "None"}
+                      {bot?.startTime
+                        ? format(new Date(bot.startTime), "PPp")
+                        : "None"}
                     </p>
                   )}
                   {botLoading ? (
@@ -115,7 +118,9 @@ export function BotDetailsDialog({ botId, onClose }: BotDetailsDialogProps) {
                   ) : (
                     <p>
                       <span className="font-medium">End:</span>{" "}
-                      {bot?.endTime ? format(new Date(bot.endTime), "PPp") : "None"}
+                      {bot?.endTime
+                        ? format(new Date(bot.endTime), "PPp")
+                        : "None"}
                     </p>
                   )}
                 </div>
