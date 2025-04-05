@@ -359,3 +359,5 @@ export const dailyUsageSchema = z.object({
   estimatedCost: z.string(),
   count: z.number(),
 });
+
+export type DailyUsageType = z.infer<typeof dailyUsageSchema>;
