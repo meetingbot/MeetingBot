@@ -48,6 +48,20 @@ export default tseslint.config(
       ],
     },
   },
+  // Special rules for test files
+  {
+    files: [
+      "**/__tests__/**/*.ts",
+      "**/__tests__/**/*.tsx",
+      "**/*.test.ts",
+      "**/*.test.tsx",
+    ],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+      "@typescript-eslint/no-var-requires": "off",
+      "@typescript-eslint/consistent-type-imports": "off",
+    },
+  },
   {
     linterOptions: {
       reportUnusedDisableDirectives: true,

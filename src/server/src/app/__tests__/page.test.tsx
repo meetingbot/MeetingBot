@@ -1,23 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
-import Home from "../page";
-import { useSession } from "next-auth/react";
-import { api } from "~/trpc/react";
+import { createTrpcApiMock, mockUseQuery } from "~/lib/testUtils";
 
-// Mock the auth and API modules
 jest.mock("next-auth/react");
+jest.mock("~/trpc/react", () => createTrpcApiMock());
 
-jest.mock("~/trpc/react", () => ({
-  api: {
-    apiKeys: {
-      getApiKeyCount: {
-        useQuery: jest.fn(),
-      },
-    },
-  },
-}));
-
-// Mock components
+// Mock Dashboards~ We are only concerned with which dashboard is rendered (rather than the functionalit of each Dashboard)
 jest.mock("../components/Dashboard", () => ({
   __esModule: true,
   default: () => <div data-testid="dashboard">Dashboard Component</div>,
@@ -30,6 +18,12 @@ jest.mock("../components/WelcomeDashboard", () => ({
   ),
 }));
 
+// Explicitly import the components *after* the mocks
+const { default: Home } = require("../page") as typeof import("../page");
+const { useSession } =
+  require("next-auth/react") as typeof import("next-auth/react");
+const { api } = require("~/trpc/react") as typeof import("~/trpc/react");
+
 // Clear mock data before each test
 beforeEach(() => {
   jest.clearAllMocks();
@@ -38,18 +32,19 @@ beforeEach(() => {
 describe("Home", () => {
   it("If the user is not signed in, they will see the Welcome Dashboard", () => {
     // ARRANGE
-    // Mock useSession to return null (not logged in)
+    // user is not signed in
     jest.mocked(useSession).mockReturnValue({
       data: null,
       status: "unauthenticated",
       update: async () => null,
     });
 
-    // Mock useQuery to not be called when not authenticated
-    // @ts-expect-error - I am not mocking the complete useQuery hook, just the parts that are being used in the component
-    jest.mocked(api.apiKeys.getApiKeyCount.useQuery).mockReturnValue({
-      data: undefined,
-    });
+    // no key count is fetched
+    jest.mocked(api.apiKeys.getApiKeyCount.useQuery).mockReturnValue(
+      mockUseQuery({
+        data: undefined,
+      }),
+    );
 
     // ACT
     render(<Home />);
@@ -61,7 +56,7 @@ describe("Home", () => {
 
   it("If the user has not yet created an API key, they will see the Welcome Dashboard", () => {
     // ARRANGE
-    // Mock useSession to return authenticated user
+    // user is authenticated
     jest.mocked(useSession).mockReturnValue({
       data: {
         user: {
@@ -73,10 +68,12 @@ describe("Home", () => {
       update: async () => null,
     });
 
-    // @ts-expect-error - I am not mocking the complete useQuery hook, just the parts that are being used in the component
-    jest.mocked(api.apiKeys.getApiKeyCount.useQuery).mockReturnValue({
-      data: { count: 0 },
-    });
+    // key count is 0
+    jest.mocked(api.apiKeys.getApiKeyCount.useQuery).mockReturnValue(
+      mockUseQuery({
+        data: { count: 0 },
+      }),
+    );
 
     // ACT
     render(<Home />);
@@ -88,7 +85,7 @@ describe("Home", () => {
 
   it("If the user has created an API key, they will see the Dashboard", () => {
     // ARRANGE
-    // Mock useSession to return authenticated user
+    // user is authenticated
     jest.mocked(useSession).mockReturnValue({
       data: {
         user: {
@@ -100,10 +97,12 @@ describe("Home", () => {
       update: async () => null,
     });
 
-    // @ts-expect-error - I am not mocking the complete useQuery hook, just the parts that are being used in the component
-    jest.mocked(api.apiKeys.getApiKeyCount.useQuery).mockReturnValue({
-      data: { count: 1 },
-    });
+    // key count is 1
+    jest.mocked(api.apiKeys.getApiKeyCount.useQuery).mockReturnValue(
+      mockUseQuery({
+        data: { count: 1 },
+      }),
+    );
 
     // ACT
     render(<Home />);
@@ -115,6 +114,7 @@ describe("Home", () => {
 
   it("If auth is loading, the page will show a skeleton", () => {
     // ARRANGE
+    // auth is loading
     jest.mocked(useSession).mockReturnValue({
       data: null,
       status: "loading",
@@ -130,10 +130,12 @@ describe("Home", () => {
 
   it("If trpc query is loading, the page will show a skeleton", () => {
     // ARRANGE
-    // @ts-expect-error - I am not mocking the complete useQuery hook, just the parts that are being used in the component
-    jest.mocked(api.apiKeys.getApiKeyCount.useQuery).mockReturnValue({
-      data: undefined,
-    });
+    // key count is loading
+    jest.mocked(api.apiKeys.getApiKeyCount.useQuery).mockReturnValue(
+      mockUseQuery({
+        data: undefined,
+      }),
+    );
 
     // ACT
     render(<Home />);
@@ -144,7 +146,7 @@ describe("Home", () => {
 
   it("If trpc query threw an error, the page will show an error alert", () => {
     // ARRANGE
-
+    // user is authenticated
     jest.mocked(useSession).mockReturnValue({
       data: {
         user: {
@@ -156,13 +158,14 @@ describe("Home", () => {
       update: async () => null,
     });
 
-    jest.mocked(api.apiKeys.getApiKeyCount.useQuery).mockReturnValue({
-      // @ts-expect-error - I am not mocking the complete useQuery hook, just the parts that are being used in the component
-      error: {
-        message: "Test error",
-      },
-      isLoading: false,
-    });
+    // key count is an error
+    jest.mocked(api.apiKeys.getApiKeyCount.useQuery).mockReturnValue(
+      mockUseQuery({
+        error: {
+          message: "Test error",
+        },
+      }),
+    );
 
     // ACT
     render(<Home />);
