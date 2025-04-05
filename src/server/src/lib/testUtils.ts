@@ -9,6 +9,7 @@ import {
 import { type TRPCClientErrorLike } from "@trpc/client";
 import type { typeToFlattenedError } from "zod";
 import type { UseMutateAsyncFunction } from "@tanstack/react-query";
+import type { SessionContextValue } from "next-auth/react";
 
 /**
  * This is a utility function to create a mock for React Query.
@@ -120,4 +121,41 @@ const mockUseMutation = <InputType, OutputType>({
   } as unknown as useMutationResults<InputType, OutputType>;
 };
 
-export { createTrpcApiMock, mockUseQuery, mockUseMutation };
+/**
+ * This is a utility function to create a valid session object (no type errors) for useSession
+ */
+
+type useSessionInput = {
+  status: "authenticated" | "unauthenticated" | "loading";
+};
+
+const mockUseSession = ({
+  status,
+}: useSessionInput): SessionContextValue<false> => {
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  switch (status) {
+    case "authenticated":
+      return {
+        data: {
+          user: { id: "fake_user_id" },
+          expires: tomorrow.toISOString(),
+        },
+        status: "authenticated",
+        update: jest.fn(),
+      };
+    case "unauthenticated":
+      return {
+        data: null,
+        status: "unauthenticated",
+        update: jest.fn(),
+      };
+    case "loading":
+      return {
+        data: null,
+        status: "loading",
+        update: jest.fn(),
+      };
+  }
+};
+
+export { createTrpcApiMock, mockUseQuery, mockUseMutation, mockUseSession };
