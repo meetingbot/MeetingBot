@@ -395,7 +395,7 @@ export class MeetsBot extends Bot {
     });
 
     // Save the screenshot to a file
-    const screenshotPath = `./${fName}`;
+    const screenshotPath = path.resolve(`/tmp/${fName}`);
     fs.writeFileSync(screenshotPath, screenshot);
     console.log(`Screenshot saved to ${screenshotPath}`);
   }
@@ -585,8 +585,14 @@ export class MeetsBot extends Bot {
     //
     // Exit
     console.log("Starting End Life Actions ...");
-    await this.leaveMeeting();
-    return 0;
+
+    try {
+      await this.leaveMeeting();
+      return 0;
+    } catch (e) {
+      this.endLife();
+      return 1;
+    }
   }
 
   /** 
@@ -616,14 +622,15 @@ export class MeetsBot extends Bot {
   async leaveMeeting() {
 
     // Try and Find the leave button, press. Otherwise, just delete the browser.
+    console.log("Trying to leave the call ...")
     try {
-      console.log("Trying to leave the call ...")
       await this.page.click(leaveButton, { timeout: 1000 }); //Short Attempt
-      console.log('Left Call.')
+      console.log('Left Call.');
     } catch (e) {
       console.log('Attempted to Leave Call - couldn\'t (probably aleready left).')
     }
 
+    console.log('Ending Life ...');
     this.endLife();
     return 0;
   }
